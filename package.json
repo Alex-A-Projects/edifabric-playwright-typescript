@@ -1,0 +1,19 @@
+{
+  "name": "edifabric-playwright-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + TypeScript test framework for the EdiNation EDI to JSON converter",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "probe": "node scripts/probe-api.mjs",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}
