@@ -1,23 +1,11 @@
 import type { APIRequestContext } from '@playwright/test';
+import { NO_API_KEY_MESSAGE, readApiKey } from './apiKey';
 
 /** The EdiNation Cloud REST endpoint that converts EDI into JSON. */
 export const EDI_READ_URL = 'https://api.edination.com/v2/x12/read';
 
 /** Header EdiNation Cloud uses for the subscription key. */
 export const SUBSCRIPTION_KEY_HEADER = 'Ocp-Apim-Subscription-Key';
-
-/** Name of the environment variable that holds the subscription key. */
-export const API_KEY_ENV_VAR = 'EDIFABRIC_API_KEY';
-
-/**
- * The demo serial key ediFabric publishes for evaluation.
- *
- * It works against the Cloud API but has a limited quota, so it is only a
- * fallback: set EDIFABRIC_API_KEY to your own serial to use it instead.
- *
- * @see https://www.edifabric.com/docs/edifabric-cloud/introduction.html
- */
-export const DEMO_API_KEY = 'bd96a836feca45cb91c86ee65d281f52';
 
 export class EdiApiError extends Error {
   constructor(
@@ -38,24 +26,19 @@ export class EdiApiError extends Error {
  * @see https://www.edifabric.com/docs/edifabric-cloud/x12-operations.html
  */
 export class EdiApiClient {
-  private readonly apiKey: string;
+  private readonly apiKey: string | undefined;
 
   constructor(
     private readonly request: APIRequestContext,
-    apiKey: string | undefined = process.env[API_KEY_ENV_VAR],
+    apiKey?: string,
     private readonly url: string = EDI_READ_URL,
   ) {
-    this.apiKey = apiKey?.trim() || DEMO_API_KEY;
+    this.apiKey = apiKey ?? readApiKey();
   }
 
-  /** True when a subscription key is available (own or the demo key). */
+  /** True when a subscription key is available. */
   get hasApiKey(): boolean {
     return Boolean(this.apiKey);
-  }
-
-  /** True when the key in use is the shared demo key rather than your own. */
-  get usesDemoKey(): boolean {
-    return this.apiKey === DEMO_API_KEY;
   }
 
   /**
@@ -90,10 +73,7 @@ export class EdiApiClient {
 
   private requireApiKey(): string {
     if (!this.apiKey) {
-      throw new Error(
-        `No EdiNation subscription key found. Set the ${API_KEY_ENV_VAR} environment variable ` +
-          'to a key from an active subscription, e.g. EDIFABRIC_API_KEY=... npm test',
-      );
+      throw new Error(NO_API_KEY_MESSAGE);
     }
     return this.apiKey;
   }

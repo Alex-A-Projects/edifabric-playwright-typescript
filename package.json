@@ -4,6 +4,7 @@
   "private": true,
   "description": "Playwright + TypeScript test framework for the EdiNation EDI to JSON converter",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",

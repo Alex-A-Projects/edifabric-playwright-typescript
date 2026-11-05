@@ -5,3 +5,6 @@ blob-report/
 playwright/.cache/
 *.log
 .DS_Store
+
+# Local subscription key — never commit it.
+.edifabric-key

@@ -46,20 +46,28 @@ Two details the API adds that the comparison has to account for:
 
 ```bash
 npm install
+npm run setup     # stores the subscription key locally (gitignored)
 npm test
 ```
 
-That is all — the suite runs out of the box against ediFabric's **demo serial
-key**, which is published in their docs for evaluation and has a limited quota:
+`npm run setup` asks for the serial and writes it to `.edifabric-key`, which is
+gitignored — **the key is never committed**, this repository is public.
+
+Get a key from
+<https://www.edifabric.com/docs/edifabric-cloud/introduction.html>, which
+publishes a **demo serial key** for evaluation, or sign up for a serial of your
+own (the free Community tier and the 14-day trial both include ediFabric Cloud —
+<https://www.edifabric.com/pricing.html>).
+
+You can also pass the key through the environment instead of a file, which is
+what CI should do:
 
 ```bash
-export EDIFABRIC_API_KEY=your-own-serial   # optional, recommended for CI
+export EDIFABRIC_API_KEY=your-own-serial
 npm test
 ```
 
-Your own serial comes with an ediFabric account (the free Community tier and
-the 14-day trial both include ediFabric Cloud — <https://www.edifabric.com/pricing.html>).
-Without one, the API answers
+Without a valid key the API answers
 
 ```
 401 { "statusCode": 401,
@@ -67,8 +75,9 @@ Without one, the API answers
                  Make sure to provide a valid key for an active subscription." }
 ```
 
-The key is read from the `EDIFABRIC_API_KEY` environment variable and is never
-logged.
+When no key is configured at all, the tests are **skipped locally** with a
+message saying why, and **fail in CI**, where a silently skipped suite would be
+a false green. The key is never logged.
 
 ## How the verification works
 
@@ -111,18 +120,21 @@ All five hit the live API.
 ```
 src/
   api/ediApiClient.ts    client for POST /v2/x12/read
+  api/apiKey.ts          reads the subscription key (env var or local file)
   data/ediSamples.ts     EDI test data + builders for ISA/GS envelopes
   fixtures/              Playwright fixtures (the `ediApi` fixture)
   utils/ediParser.ts     independent EDI parser + JSON/EDI comparison (the oracle)
 tests/
   edi-to-json.spec.ts    the tests
 scripts/
+  setup.mjs              stores the subscription key in .edifabric-key
   probe-api.mjs          posts a sample EDI and prints the raw response
 ```
 
 ## Running
 
 ```bash
+npm run setup            # store the subscription key locally (once)
 npm test                 # run the suite
 npm test -- --reporter=html   # open the HTML report
 npm run probe            # raw API call, no test runner
@@ -135,8 +147,8 @@ npm run lint             # type check
   ("EDI never leaves your browser"). It uses the cloud only to download the
   X12 spec, through `https://api.edination.com/wa/v1`. That API accepts the
   demo key embedded in the page's `edination.api.config.js`, but
-  `/v2/x12/read` and `/v3/x12/parse` do not — it needs the demo serial key
-  from ediFabric's docs, or your own.
+  `/v2/x12/read` and `/v3/x12/parse` do not — they need a serial from
+  ediFabric's docs, or your own.
 - The samples use the 850 purchase order in the 5010 and 4010 implementations.
   The API's spec catalogue is narrower than the web tool's: transaction sets
   such as 855, 856 and 810 are rejected with

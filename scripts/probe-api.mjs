@@ -3,14 +3,19 @@
  * response. Useful for checking the API contract (and the subscription key)
  * without running the test suite.
  *
- *   EDIFABRIC_API_KEY=your-key npm run probe
+ *   npm run probe
  *
- * The subscription key is read from the environment; it is never printed.
- * Without one, the demo key published by ediFabric is used.
+ * The subscription key is read from the EDIFABRIC_API_KEY environment variable
+ * or from the local .edifabric-key file. It is never printed.
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const API_URL = process.env.EDIFABRIC_API_URL ?? 'https://api.edination.com/v2/x12/read';
-const DEMO_API_KEY = 'bd96a836feca45cb91c86ee65d281f52';
+const KEY_FILE = join(ROOT, '.edifabric-key');
 
 const EDI = [
   'ISA*00*          *00*          *ZZ*SOURCE         *ZZ*TARGET         *240101*1200*^*00501*000000905*0*P*:~',
@@ -25,10 +30,22 @@ const EDI = [
   'IEA*1*000000905~',
 ].join('\n');
 
-const apiKey = process.env.EDIFABRIC_API_KEY?.trim() || DEMO_API_KEY;
+function readKey() {
+  const fromEnv = process.env.EDIFABRIC_API_KEY?.trim();
+  if (fromEnv) return fromEnv;
+  if (existsSync(KEY_FILE)) return readFileSync(KEY_FILE, 'utf-8').trim();
+  return undefined;
+}
 
-if (!process.env.EDIFABRIC_API_KEY) {
-  console.log('No EDIFABRIC_API_KEY set — using the shared demo key.');
+const apiKey = readKey();
+
+if (!apiKey) {
+  console.error('No subscription key found.');
+  console.error('Run "npm run setup" to store one, or set EDIFABRIC_API_KEY.');
+  console.error(
+    'Get a key from https://www.edifabric.com/docs/edifabric-cloud/introduction.html',
+  );
+  process.exit(1);
 }
 
 const response = await fetch(API_URL, {
